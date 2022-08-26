@@ -4,7 +4,7 @@ import numpy as np
 from scipy.stats import norm 
 from datetime import date
 
-TDAMERITRADE_API_KEY = "WXXVUGKDSSDG10JE9WEKDBJTC6ILWGWF"
+TDAMERITRADE_API_KEY = ""
 # Returns a short term risk free rate using the 1 month us treasury yield. 
 # Data scraped off MarketWatch
 def getRiskFreeRate():
