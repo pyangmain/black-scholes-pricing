@@ -1,9 +1,10 @@
 from bs4 import BeautifulSoup
-import requests
+import requests 
 import numpy as np
 from scipy.stats import norm 
+from datetime import date
 
-key = ""
+key = "TDAMERITRADE_API_KEY"
 # Returns a short term risk free rate using the 1 month us treasury yield. 
 # Data scraped off MarketWatch
 def getRiskFreeRate():
@@ -13,10 +14,10 @@ def getRiskFreeRate():
     riskFreeRate = soup.find('div', class_='intraday__data')
     return float(riskFreeRate.span.text)/100
 
-# Returns the Historical Volatility (Close to Close) in the last 180 days of a stock given the ticker
+# Returns the Historical Volatility (Close to Close) in the last 60 days of a stock given the ticker
 # Data scraped off alphaquery
 def getHistVol(ticker):
-    url = "https://www.alphaquery.com/stock/" + ticker + "/volatility-option-statistics/180-day/historical-volatility"
+    url = "https://www.alphaquery.com/stock/" + ticker + "/volatility-option-statistics/60-day/historical-volatility"
     source = requests.get(url).text
     soup = BeautifulSoup(source, "lxml")
     histVol = soup.find('div', class_="indicator-figure-inner")
@@ -45,6 +46,54 @@ def blackScholes(ticker, strikePrice, timeToExpiration, type = "call"):
         return price
     except:
         print("Please enter a valid option type: either 'call' or 'put'")
+# Returns the bid, ask, and last prices of an options contract given that contract's infromation
+def getBidAskLast(url, parameters, daysToExpiration, contractType):
+    data = requests.get(url, params= parameters).json()
+    bid = data[contractType+"ExpDateMap"][parameters['fromDate']+":"+str(daysToExpiration)][str(float(parameters["strike"]))][0]["bid"]
+    ask = data[contractType+"ExpDateMap"][parameters['fromDate']+":"+str(daysToExpiration)][str(float(parameters["strike"]))][0]["ask"]
+    last = data[contractType+"ExpDateMap"][parameters['fromDate']+":"+str(daysToExpiration)][str(float(parameters["strike"]))][0]["last"]
+    return "          Bid: " + str(bid) + "     Ask: " + str(ask) + "     Last: " + str(last)
+tickerSuccess = False
+strikeSuccess = False
+typeSuccess = False
+expirationDateSuccess = False
+while not tickerSuccess:
+    try:
+        ticker = input("Enter the Ticker: ")
+        getPrice(ticker)
+        tickerSuccess = True
+    except:
+        print("Please enter a valid Ticker")
+link = "https://api.tdameritrade.com/v1/marketdata/chains"
+params = {}
+params.update({'apikey': key})
+params.update({'symbol': ticker})
+while not strikeSuccess:  
+        strike = input("Enter the Strike: ")
+        params.update({'strike': strike})
+        data = requests.get(link, params=params).json()
+        if(data['status'] == "SUCCESS"):
+            strikeSuccess = True
+            break
+        print("Please enter a valid Strike")
+while not typeSuccess:
+    contractType = input("Enter the type(call/put): ")
+    if(contractType == "call" or contractType == "put"):
+        typeSuccess = True
+        break
+    print("Please enter a valid contract type")
+expirationDate = input("Enter the expiration date(YYYY-MM-DD): ")
+while not expirationDateSuccess:
+    params.update({'fromDate': expirationDate})
+    params.update({'toDate': expirationDate})
+    data = requests.get(link, params=params).json()
+    if(data['status'] == "SUCCESS"):
+        expirationDateSuccess = True
+        break
+    print("Please enter a valid expiration date")
 
-print(blackScholes("MO", 45.5, 5, type="call"))
-
+expirationDate = date(int(expirationDate[0:4]), int(expirationDate[5:7]), int(expirationDate[-2:]))
+currDate = date.today()
+daysToExpiration = (expirationDate - currDate).days
+while(True):
+    print("Theoretical Value: " + str(round(blackScholes(ticker, float(strike), daysToExpiration, type=contractType), 2)) + getBidAskLast(link, params, daysToExpiration, contractType))
