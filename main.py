@@ -4,7 +4,7 @@ import numpy as np
 from scipy.stats import norm 
 from datetime import date
 
-key = "TDAMERITRADE_API_KEY"
+TDAMERITRADE_API_KEY = "WXXVUGKDSSDG10JE9WEKDBJTC6ILWGWF"
 # Returns a short term risk free rate using the 1 month us treasury yield. 
 # Data scraped off MarketWatch
 def getRiskFreeRate():
@@ -26,7 +26,7 @@ def getHistVol(ticker):
 def getPrice(ticker):
     url = "https://api.tdameritrade.com/v1/marketdata/" + ticker + "/quotes"
     params = {}
-    params.update({'apikey': key}) 
+    params.update({'apikey': TDAMERITRADE_API_KEY}) 
     data = requests.get(url, params=params).json()
     return data[ticker]["lastPrice"]
 # Calculates the theoretical value of an option using the black-scholes model, with volatility being the historical close to close 180 day volatility and 
@@ -66,7 +66,7 @@ while not tickerSuccess:
         print("Please enter a valid Ticker")
 link = "https://api.tdameritrade.com/v1/marketdata/chains"
 params = {}
-params.update({'apikey': key})
+params.update({'apikey': TDAMERITRADE_API_KEY})
 params.update({'symbol': ticker})
 while not strikeSuccess:  
         strike = input("Enter the Strike: ")
